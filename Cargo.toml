@@ -1,0 +1,10 @@
+[package]
+name = "voronoi-sequential"
+version = "0.1.0"
+authors = ["Heghedus Razvan <heghedus.razvan@gmail.com>"]
+
+[dependencies]
+clap = "2"
+image = "*"
+rand = "0.4"
+hsl = "0.1"
