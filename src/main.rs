@@ -7,7 +7,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::VecDeque;
 use clap::{Arg, App};
-use image::{GenericImage, ImageBuffer};
 use rand::Rng;
 use hsl::HSL;
 
@@ -35,11 +34,25 @@ impl Point {
     fn new(x: usize, y: usize) -> Point {
         Point{x,y}
     }
+
+    fn distance(&self, point: &Point) -> f64 {
+        let x: f64 = (self.x as f64) - (point.x as f64);
+        let x = x * x;
+        let y: f64 = (self.y as f64) - (point.y as f64);
+        let y = y * y;
+        let s: f64 = x + y;
+        s.sqrt()
+    }
 }
 
 impl Tile {
     fn new(position: Point) -> Tile {
         Tile{id: 0, position: position, seed_position: Point::new(0,0)}
+    }
+
+    fn closer_seed(&self, _seed_position: &Point) -> bool {
+        self.position.distance(&self.seed_position) <
+            self.position.distance(&_seed_position)
     }
 }
 
@@ -120,6 +133,7 @@ fn main() {
                             .get_matches();
     let filename = format!("data/{}", matches.value_of("INPUT").unwrap());
     println!("Using data file: {}", filename);
+    // TODO more comments
 
     let mut file = BufReader::new(File::open(filename).unwrap());
 
@@ -147,7 +161,7 @@ fn main() {
     for (i, line) in file.lines().enumerate() {
         let position = Point::from_string(&line.unwrap());
         let mut tile = space.get_mut(position.x).unwrap().get_mut(position.y).unwrap();
-        tile.id = i+1;
+        tile.id = i + 1;
         tile.seed_position = position;
         queue.push_back(position);
     }
@@ -160,14 +174,22 @@ fn main() {
         for i in &directions {
             for j in &directions {
                 match point_in_space_dimension(&position, *i, *j, &max_size) {
+                    // TODO move the below code in a separate function
                     Some((x,y)) => {
-                        let mut tile = space.get_mut(x).unwrap()
+                        let mut next_tile = space.get_mut(x).unwrap()
                                             .get_mut(y).unwrap();
-                        if current_tile.id != tile.id {
-                            if tile.id == 0 {
-                                tile.id = current_tile.id;
-                                tile.seed_position = current_tile.seed_position;
-                                queue.push_back(tile.position);
+                        if current_tile.id != next_tile.id {
+                            if next_tile.id == 0 {
+                                next_tile.id = current_tile.id;
+                                next_tile.seed_position = current_tile.seed_position;
+                                queue.push_back(next_tile.position);
+                            }
+                            else if next_tile.id > current_tile.id {
+                                if !next_tile.closer_seed(&current_tile.seed_position) {
+                                    next_tile.id = current_tile.id;
+                                    next_tile.seed_position = current_tile.seed_position;
+                                    queue.push_back(next_tile.position);
+                                }
                             }
                         }
                     }
