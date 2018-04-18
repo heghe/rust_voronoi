@@ -3,12 +3,15 @@ extern crate image;
 extern crate rand;
 extern crate hsl;
 
+use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::VecDeque;
 use clap::{Arg, App};
 use rand::Rng;
 use hsl::HSL;
+
+const SCALE_SIZE:u32 = 16;
 
 #[derive(Clone, Copy)]
 struct Point {
@@ -51,7 +54,7 @@ impl Tile {
     }
 
     fn closer_seed(&self, _seed_position: &Point) -> bool {
-        self.position.distance(&self.seed_position) <
+        self.position.distance(&self.seed_position) <=
             self.position.distance(&_seed_position)
     }
 }
@@ -122,6 +125,27 @@ fn generate_colors(n:usize) -> Vec<[u8; 3]> {
     colors
 }
 
+fn make_image(space: &Vec<Vec<Tile>>, space_size: &Point, colors: &Vec<[u8; 3]>,
+              filename: &String) {
+    let mut image_buffer = image::ImageBuffer::new(SCALE_SIZE * space_size.x as u32,
+                                                   SCALE_SIZE * space_size.y as u32);
+    for (x, y, pixel) in image_buffer.enumerate_pixels_mut() {
+        let index = space.get((x / SCALE_SIZE) as usize).unwrap()
+            .get((y / SCALE_SIZE) as usize).unwrap().id;
+        let values:&[u8; 3];
+        if index == 0 {
+            values = &[0 as u8, 0 as u8, 0 as u8];
+        }
+        else {
+            values = colors.get(index - 1).unwrap();
+        }
+        *pixel = image::Rgb([values[0], values[1], values[2]]);
+    }
+
+    let ref mut fout = File::create(filename).unwrap();
+    image::ImageRgb8(image_buffer).save(fout, image::PNG).unwrap();
+}
+
 fn main() {
     let matches = App::new("Generating voronoi diagram - sequential")
                             .version("1.0")
@@ -165,12 +189,31 @@ fn main() {
         tile.seed_position = position;
         queue.push_back(position);
     }
+    // directory
+    let output_debug_directory = format!("output/debug_{}",
+                                         matches.value_of("INPUT").unwrap());
+    fs::create_dir_all(&output_debug_directory);
+
+    //generate n colors
+    let colors = generate_colors(n);
 
     let directions = vec![-1, 0, 1];
+    // print initial set
+    make_image(&space, &max_size, &colors, &format!("{}/0.png", &output_debug_directory));
+
+    let mut step = 1;
+    let mut last_id = 1;
 
     while !queue.is_empty() {
         let position = queue.pop_front().unwrap();
         let current_tile = space.get(position.x).unwrap().get(position.y).unwrap().clone();
+
+        if last_id != current_tile.id {
+            let output_debug_filename = format!("{}/{}.png", output_debug_directory, step);
+            make_image(&space, &max_size, &colors, &output_debug_filename);
+            step += 1;
+            last_id = current_tile.id;
+        }
         for i in &directions {
             for j in &directions {
                 match point_in_space_dimension(&position, *i, *j, &max_size) {
@@ -184,7 +227,8 @@ fn main() {
                                 next_tile.seed_position = current_tile.seed_position;
                                 queue.push_back(next_tile.position);
                             }
-                            else if next_tile.id > current_tile.id {
+                            //else if next_tile.id > current_tile.id {
+                            else {
                                 if !next_tile.closer_seed(&current_tile.seed_position) {
                                     next_tile.id = current_tile.id;
                                     next_tile.seed_position = current_tile.seed_position;
@@ -202,23 +246,15 @@ fn main() {
     // also write this to a file
     for line in &space {
         for tile in line {
-            print!("{}", tile.id);
+            print!("{} ", tile.id);
         }
         println!();
     }
 
-    let colors = generate_colors(n);
     for color in &colors {
         println!("{} {} {}", color[0], color[1], color[2]);
     }
-    let mut image_buffer = image::ImageBuffer::new(max_size.x as u32, max_size.y as u32);
-    for (x, y, pixel) in image_buffer.enumerate_pixels_mut() {
-        let index = space.get(x as usize).unwrap().get(y as usize).unwrap().id - 1;
-        let values = colors.get(index).unwrap();
-        *pixel = image::Rgb([values[0], values[1], values[2]]);
-    }
 
     let output_filename = format!("output/{}.png", matches.value_of("INPUT").unwrap());
-    let ref mut fout = File::create(output_filename).unwrap();
-    image::ImageRgb8(image_buffer).save(fout, image::PNG).unwrap();
+    make_image(&space, &max_size, &colors, &output_filename);
 }

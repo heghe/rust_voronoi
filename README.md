@@ -7,3 +7,4 @@
 Todos:
  - [ ] command line argument for using one implementation or the other
  - [ ] move specification document here
+ - [ ] improve poont_in_space_dimension
