@@ -29,4 +29,25 @@ For the multithreading implementation I choose to use a modified version of Jump
 
 To do this in a multithreading way, there will be __n__ _work jobs_, each _work job_ having an associated seed. For every _work job_ we apply the JFA algorithm explain above. These _work jobs_ will run on a differents threads assigned from a thread pool wich will have a size equal with the number of logical proccesors. This means that the _work jobs_ will run asynchronous. Because each time we do a flood we need to be sure that all the _work job_ are at the same value of _k_ we will have a barrier with will synchronize the _work jobs_. In addition of this we need to make sure that there will not be a race condition between threads when 2 or more threads want to modify the same element. To prevent this race condition, each element will be guarded by a mutex.
 
+###### WT description
+	Input: - Matrix s[0..X][0..X] shared memory(space matrix)
+	       - Tile s(seed position)
+	       - int k (step size)
+	Output: updated matix space
+
+	local queue q1,q2
+	local bool done = false
+	q1.push(s)
+
+	while(!done):
+		while(!q1.empty()):
+			Tile c_t = q.pop()
+			for Tile t in next_tiles(c_t):
+				if update(t, c_t):
+					q2.push(t)
+		q1 = q2
+		barrier() | <-- wait for all threads here
+		done = next_step(k) | <-- only one thread will update k
+
+
 ## TODO exemple image after implementation
