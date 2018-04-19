@@ -59,51 +59,18 @@ impl Tile {
     }
 }
 
-fn point_in_space_dimension(point: &Point, i:isize, j:isize, space_size: &Point) -> Option<(usize, usize)> {
-    let mut x:usize = point.x;
-    let mut y:usize = point.y;
+fn point_bounderies(point: &Point, i:isize, j:isize, space_size: &Point) -> Option<(usize, usize)> {
+    let x:isize = point.x as isize + i;
+    let y:isize = point.y as isize + j;
 
-    match i {
-        -1 => {
-            if x == 0 {
-                return None
-            }
-            else {
-                x -= 1;
-            }
-        }
-        1 => {
-            if x == space_size.x - 1 {
-                return None
-            }
-            else {
-                x += 1;
-            }
-        }
-        _ => {}
+    if x < 0 || x > space_size.x as isize -1 {
+        return None
+    }
+    if y < 0 || y > space_size.y as isize -1 {
+        return None
     }
 
-    match j {
-        -1 => {
-            if y == 0 {
-                return None
-            }
-            else {
-                y -= 1;
-            }
-        }
-        1 => {
-            if y == space_size.y -1 {
-                return None
-            }
-            else {
-                y += 1;
-            }
-        }
-        _ => {}
-    }
-
-    Some((x,y))
+    Some((x as usize, y as usize))
 }
 
 fn generate_colors(n:usize) -> Vec<[u8; 3]> {
@@ -216,7 +183,7 @@ fn main() {
         }
         for i in &directions {
             for j in &directions {
-                match point_in_space_dimension(&position, *i, *j, &max_size) {
+                match point_bounderies(&position, *i, *j, &max_size) {
                     // TODO move the below code in a separate function
                     Some((x,y)) => {
                         let mut next_tile = space.get_mut(x).unwrap()
