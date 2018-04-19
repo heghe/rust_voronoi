@@ -41,7 +41,7 @@ To do this in a multithreading way, there will be __n__ _work jobs_, each _work 
 
 	while(!done):
 		while(!q1.empty()):
-			Tile c_t = q.pop()
+			Tile c_t = q1.pop()
 			for Tile t in next_tiles(c_t):
 				if update(t, c_t):
 					q2.push(t)
