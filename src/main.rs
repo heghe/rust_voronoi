@@ -1,104 +1,18 @@
 extern crate clap;
 extern crate hsl;
 extern crate image;
-extern crate rand;
+
+mod lib;
 
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::VecDeque;
 use clap::{App, Arg};
-use rand::Rng;
+use lib::{generate_colors, point_bounderies, Point, Tile};
 use hsl::HSL;
 
 const SCALE_SIZE: u32 = 16;
-
-#[derive(Clone, Copy)]
-struct Point {
-    x: usize,
-    y: usize,
-}
-
-#[derive(Clone, Copy)]
-struct Tile {
-    id: usize,
-    position: Point,
-    seed_position: Point,
-}
-
-impl Point {
-    fn from_string(string: &str) -> Point {
-        let values = string.trim().split_whitespace().collect::<Vec<&str>>();
-        let x = values.get(0).unwrap().parse::<usize>().unwrap();
-        let y = values.get(1).unwrap().parse::<usize>().unwrap();
-        Point { x, y }
-    }
-
-    fn new(x: usize, y: usize) -> Point {
-        Point { x, y }
-    }
-
-    fn distance(&self, point: &Point) -> f64 {
-        let x: f64 = (self.x as f64) - (point.x as f64);
-        let x = x * x;
-        let y: f64 = (self.y as f64) - (point.y as f64);
-        let y = y * y;
-        let s: f64 = x + y;
-        s.sqrt()
-    }
-}
-
-impl Tile {
-    fn new(position: Point) -> Tile {
-        Tile {
-            id: 0,
-            position: position,
-            seed_position: Point::new(0, 0),
-        }
-    }
-
-    fn closer_seed(&self, _seed_position: &Point) -> bool {
-        self.position.distance(&self.seed_position) <= self.position.distance(&_seed_position)
-    }
-}
-
-fn point_bounderies(
-    point: &Point,
-    i: isize,
-    j: isize,
-    space_size: &Point,
-) -> Option<(usize, usize)> {
-    let x: isize = point.x as isize + i;
-    let y: isize = point.y as isize + j;
-
-    if x < 0 || x > space_size.x as isize - 1 {
-        return None;
-    }
-    if y < 0 || y > space_size.y as isize - 1 {
-        return None;
-    }
-
-    Some((x as usize, y as usize))
-}
-
-fn generate_colors(n: usize) -> Vec<[u8; 3]> {
-    let mut colors: Vec<[u8; 3]> = Vec::new();
-    let mut rng = rand::thread_rng();
-    let mut i: f64 = 0.0;
-    let step: f64 = 360.0 / (n as f64);
-    while i < 360.0 {
-        let h: f64 = i;
-        let s: f64 = 0.9 + rng.gen_range(0.0, 0.1);
-        let l: f64 = 0.5 + rng.gen_range(0.0, 0.1);
-
-        let hsl_color = HSL { h, s, l };
-        let rgb_color = hsl_color.to_rgb();
-
-        i += step;
-        colors.push([rgb_color.0, rgb_color.1, rgb_color.2]);
-    }
-    colors
-}
 
 fn make_image(
     space: &Vec<Vec<Tile>>,
@@ -130,6 +44,25 @@ fn make_image(
     image::ImageRgb8(image_buffer)
         .save(fout, image::PNG)
         .unwrap();
+}
+
+pub fn generate_colors(n: usize) -> Vec<[u8; 3]> {
+    let mut colors: Vec<[u8; 3]> = Vec::new();
+    let mut rng = rand::thread_rng();
+    let mut i: f64 = 0.0;
+    let step: f64 = 360.0 / (n as f64);
+    while i < 360.0 {
+        let h: f64 = i;
+        let s: f64 = 0.9 + rng.gen_range(0.0, 0.1);
+        let l: f64 = 0.5 + rng.gen_range(0.0, 0.1);
+
+        let hsl_color = HSL { h, s, l };
+        let rgb_color = hsl_color.to_rgb();
+
+        i += step;
+        colors.push([rgb_color.0, rgb_color.1, rgb_color.2]);
+    }
+    colors
 }
 
 fn main() {
