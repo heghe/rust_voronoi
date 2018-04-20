@@ -1,17 +1,17 @@
 extern crate clap;
+extern crate hsl;
 extern crate image;
 extern crate rand;
-extern crate hsl;
 
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::VecDeque;
-use clap::{Arg, App};
+use clap::{App, Arg};
 use rand::Rng;
 use hsl::HSL;
 
-const SCALE_SIZE:u32 = 16;
+const SCALE_SIZE: u32 = 16;
 
 #[derive(Clone, Copy)]
 struct Point {
@@ -31,11 +31,11 @@ impl Point {
         let values = string.trim().split_whitespace().collect::<Vec<&str>>();
         let x = values.get(0).unwrap().parse::<usize>().unwrap();
         let y = values.get(1).unwrap().parse::<usize>().unwrap();
-        Point{x, y}
+        Point { x, y }
     }
 
     fn new(x: usize, y: usize) -> Point {
-        Point{x,y}
+        Point { x, y }
     }
 
     fn distance(&self, point: &Point) -> f64 {
@@ -50,40 +50,48 @@ impl Point {
 
 impl Tile {
     fn new(position: Point) -> Tile {
-        Tile{id: 0, position: position, seed_position: Point::new(0,0)}
+        Tile {
+            id: 0,
+            position: position,
+            seed_position: Point::new(0, 0),
+        }
     }
 
     fn closer_seed(&self, _seed_position: &Point) -> bool {
-        self.position.distance(&self.seed_position) <=
-            self.position.distance(&_seed_position)
+        self.position.distance(&self.seed_position) <= self.position.distance(&_seed_position)
     }
 }
 
-fn point_bounderies(point: &Point, i:isize, j:isize, space_size: &Point) -> Option<(usize, usize)> {
-    let x:isize = point.x as isize + i;
-    let y:isize = point.y as isize + j;
+fn point_bounderies(
+    point: &Point,
+    i: isize,
+    j: isize,
+    space_size: &Point,
+) -> Option<(usize, usize)> {
+    let x: isize = point.x as isize + i;
+    let y: isize = point.y as isize + j;
 
-    if x < 0 || x > space_size.x as isize -1 {
-        return None
+    if x < 0 || x > space_size.x as isize - 1 {
+        return None;
     }
-    if y < 0 || y > space_size.y as isize -1 {
-        return None
+    if y < 0 || y > space_size.y as isize - 1 {
+        return None;
     }
 
     Some((x as usize, y as usize))
 }
 
-fn generate_colors(n:usize) -> Vec<[u8; 3]> {
-    let mut colors:Vec<[u8; 3]> = Vec::new();
+fn generate_colors(n: usize) -> Vec<[u8; 3]> {
+    let mut colors: Vec<[u8; 3]> = Vec::new();
     let mut rng = rand::thread_rng();
-    let mut i:f64 = 0.0;
-    let step:f64 = 360.0 / (n as f64);
+    let mut i: f64 = 0.0;
+    let step: f64 = 360.0 / (n as f64);
     while i < 360.0 {
-        let h:f64 = i;
-        let s:f64 = 0.9 + rng.gen_range(0.0, 0.1);
-        let l:f64 = 0.5 + rng.gen_range(0.0, 0.1);
+        let h: f64 = i;
+        let s: f64 = 0.9 + rng.gen_range(0.0, 0.1);
+        let l: f64 = 0.5 + rng.gen_range(0.0, 0.1);
 
-        let hsl_color = HSL{h,s,l};
+        let hsl_color = HSL { h, s, l };
         let rgb_color = hsl_color.to_rgb();
 
         i += step;
@@ -92,36 +100,49 @@ fn generate_colors(n:usize) -> Vec<[u8; 3]> {
     colors
 }
 
-fn make_image(space: &Vec<Vec<Tile>>, space_size: &Point, colors: &Vec<[u8; 3]>,
-              filename: &String) {
-    let mut image_buffer = image::ImageBuffer::new(SCALE_SIZE * space_size.x as u32,
-                                                   SCALE_SIZE * space_size.y as u32);
+fn make_image(
+    space: &Vec<Vec<Tile>>,
+    space_size: &Point,
+    colors: &Vec<[u8; 3]>,
+    filename: &String,
+) {
+    let mut image_buffer = image::ImageBuffer::new(
+        SCALE_SIZE * space_size.x as u32,
+        SCALE_SIZE * space_size.y as u32,
+    );
     for (x, y, pixel) in image_buffer.enumerate_pixels_mut() {
-        let index = space.get((x / SCALE_SIZE) as usize).unwrap()
-            .get((y / SCALE_SIZE) as usize).unwrap().id;
-        let values:&[u8; 3];
+        let index = space
+            .get((x / SCALE_SIZE) as usize)
+            .unwrap()
+            .get((y / SCALE_SIZE) as usize)
+            .unwrap()
+            .id;
+        let values: &[u8; 3];
         if index == 0 {
             values = &[0 as u8, 0 as u8, 0 as u8];
-        }
-        else {
+        } else {
             values = colors.get(index - 1).unwrap();
         }
         *pixel = image::Rgb([values[0], values[1], values[2]]);
     }
 
     let ref mut fout = File::create(filename).unwrap();
-    image::ImageRgb8(image_buffer).save(fout, image::PNG).unwrap();
+    image::ImageRgb8(image_buffer)
+        .save(fout, image::PNG)
+        .unwrap();
 }
 
 fn main() {
     let matches = App::new("Generating voronoi diagram - sequential")
-                            .version("1.0")
-                            .author("Heghedus Razvan <heghedus.razvan@gmail.com>")
-                            .arg(Arg::with_name("INPUT")
-                                 .help("Input set file")
-                                 .required(true)
-                                 .index(1))
-                            .get_matches();
+        .version("1.0")
+        .author("Heghedus Razvan <heghedus.razvan@gmail.com>")
+        .arg(
+            Arg::with_name("INPUT")
+                .help("Input set file")
+                .required(true)
+                .index(1),
+        )
+        .get_matches();
     let filename = format!("data/{}", matches.value_of("INPUT").unwrap());
     println!("Using data file: {}", filename);
     // TODO more comments
@@ -133,12 +154,12 @@ fn main() {
     file.read_line(&mut line).unwrap();
     let max_size = Point::from_string(&line);
 
-    let mut space:Vec<Vec<Tile>>  = Vec::with_capacity(max_size.x);
+    let mut space: Vec<Vec<Tile>> = Vec::with_capacity(max_size.x);
     // creating application space dimension
     for i in 0..max_size.x {
         space.push(Vec::with_capacity(max_size.y));
         for j in 0..max_size.y {
-            space.get_mut(i).unwrap().push(Tile::new(Point::new(i,j)));
+            space.get_mut(i).unwrap().push(Tile::new(Point::new(i, j)));
         }
     }
 
@@ -147,18 +168,21 @@ fn main() {
     file.read_line(&mut line).unwrap();
     let n: usize = line.trim().parse::<usize>().unwrap();
 
-    let mut queue:VecDeque<Point> = VecDeque::new();
+    let mut queue: VecDeque<Point> = VecDeque::new();
 
     for (i, line) in file.lines().enumerate() {
         let position = Point::from_string(&line.unwrap());
-        let mut tile = space.get_mut(position.x).unwrap().get_mut(position.y).unwrap();
+        let mut tile = space
+            .get_mut(position.x)
+            .unwrap()
+            .get_mut(position.y)
+            .unwrap();
         tile.id = i + 1;
         tile.seed_position = position;
         queue.push_back(position);
     }
     // directory
-    let output_debug_directory = format!("output/debug_{}",
-                                         matches.value_of("INPUT").unwrap());
+    let output_debug_directory = format!("output/debug_{}", matches.value_of("INPUT").unwrap());
     fs::create_dir_all(&output_debug_directory);
 
     //generate n colors
@@ -166,14 +190,24 @@ fn main() {
 
     let directions = vec![-1, 0, 1];
     // print initial set
-    make_image(&space, &max_size, &colors, &format!("{}/0.png", &output_debug_directory));
+    make_image(
+        &space,
+        &max_size,
+        &colors,
+        &format!("{}/0.png", &output_debug_directory),
+    );
 
     let mut step = 1;
     let mut last_id = 1;
 
     while !queue.is_empty() {
         let position = queue.pop_front().unwrap();
-        let current_tile = space.get(position.x).unwrap().get(position.y).unwrap().clone();
+        let current_tile = space
+            .get(position.x)
+            .unwrap()
+            .get(position.y)
+            .unwrap()
+            .clone();
 
         if last_id != current_tile.id {
             let output_debug_filename = format!("{}/{}.png", output_debug_directory, step);
@@ -185,9 +219,8 @@ fn main() {
             for j in &directions {
                 match point_bounderies(&position, *i, *j, &max_size) {
                     // TODO move the below code in a separate function
-                    Some((x,y)) => {
-                        let mut next_tile = space.get_mut(x).unwrap()
-                                            .get_mut(y).unwrap();
+                    Some((x, y)) => {
+                        let mut next_tile = space.get_mut(x).unwrap().get_mut(y).unwrap();
                         if current_tile.id != next_tile.id {
                             if next_tile.id == 0 {
                                 next_tile.id = current_tile.id;
