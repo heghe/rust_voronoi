@@ -1,15 +1,17 @@
 extern crate clap;
 extern crate hsl;
 extern crate image;
+extern crate rand;
 
 mod lib;
 
+use self::rand::Rng;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::VecDeque;
 use clap::{App, Arg};
-use lib::{generate_colors, point_bounderies, Point, Tile};
+use lib::{point_bounderies, ApplicationState, Point, Tile};
 use hsl::HSL;
 
 const SCALE_SIZE: u32 = 16;
@@ -65,70 +67,45 @@ pub fn generate_colors(n: usize) -> Vec<[u8; 3]> {
     colors
 }
 
-fn main() {
-    let matches = App::new("Generating voronoi diagram - sequential")
-        .version("1.0")
-        .author("Heghedus Razvan <heghedus.razvan@gmail.com>")
-        .arg(
-            Arg::with_name("INPUT")
-                .help("Input set file")
-                .required(true)
-                .index(1),
-        )
-        .get_matches();
-    let filename = format!("data/{}", matches.value_of("INPUT").unwrap());
-    println!("Using data file: {}", filename);
-    // TODO more comments
+fn multithreading(state: &mut ApplicationState) {
+    // TODO
+}
 
-    let mut file = BufReader::new(File::open(filename).unwrap());
+fn sequantial(state: &mut ApplicationState) {
+    let mut space: Vec<Vec<Tile>> = Vec::with_capacity(state.space_size.x);
 
-    let mut line = String::new();
-    // read X, Y
-    file.read_line(&mut line).unwrap();
-    let max_size = Point::from_string(&line);
-
-    let mut space: Vec<Vec<Tile>> = Vec::with_capacity(max_size.x);
     // creating application space dimension
-    for i in 0..max_size.x {
-        space.push(Vec::with_capacity(max_size.y));
-        for j in 0..max_size.y {
+    for i in 0..state.space_size.x {
+        space.push(Vec::with_capacity(state.space_size.y));
+        for j in 0..state.space_size.y {
             space.get_mut(i).unwrap().push(Tile::new(Point::new(i, j)));
         }
     }
-
-    // read n
-    line.clear();
-    file.read_line(&mut line).unwrap();
-    let n: usize = line.trim().parse::<usize>().unwrap();
-
-    let mut queue: VecDeque<Point> = VecDeque::new();
-
-    for (i, line) in file.lines().enumerate() {
-        let position = Point::from_string(&line.unwrap());
-        let mut tile = space
-            .get_mut(position.x)
-            .unwrap()
-            .get_mut(position.y)
-            .unwrap();
-        tile.id = i + 1;
-        tile.seed_position = position;
-        queue.push_back(position);
+    // put the seeds in the space
+    // TODO make iterator for point struct to be able to use enumerate()
+    let mut id = 1;
+    for seed in &state.seeds {
+        let mut tile = space.get_mut(seed.x).unwrap().get_mut(seed.y).unwrap();
+        tile.id = id;
+        tile.seed_position = *seed;
+        id += 1;
     }
-    // directory
-    let output_debug_directory = format!("output/debug_{}", matches.value_of("INPUT").unwrap());
-    fs::create_dir_all(&output_debug_directory);
-
-    //generate n colors
-    let colors = generate_colors(n);
 
     let directions = vec![-1, 0, 1];
     // print initial set
-    make_image(
-        &space,
-        &max_size,
-        &colors,
-        &format!("{}/0.png", &output_debug_directory),
-    );
+    if state.debug_enabled {
+        make_image(
+            &space,
+            &state.space_size,
+            &state.colors,
+            &format!("{}/0.png", &state.output_debug_directory),
+        );
+    }
+
+    let mut queue: VecDeque<Point> = VecDeque::new();
+    for seed in &state.seeds {
+        queue.push_back(*seed);
+    }
 
     let mut step = 1;
     let mut last_id = 1;
@@ -142,15 +119,20 @@ fn main() {
             .unwrap()
             .clone();
 
-        if last_id != current_tile.id {
-            let output_debug_filename = format!("{}/{}.png", output_debug_directory, step);
-            make_image(&space, &max_size, &colors, &output_debug_filename);
+        if state.debug_enabled && last_id != current_tile.id {
+            let output_debug_filename = format!("{}/{}.png", state.output_debug_directory, step);
+            make_image(
+                &space,
+                &state.space_size,
+                &state.colors,
+                &output_debug_filename,
+            );
             step += 1;
             last_id = current_tile.id;
         }
         for i in &directions {
             for j in &directions {
-                match point_bounderies(&position, *i, *j, &max_size) {
+                match point_bounderies(&position, *i, *j, &state.space_size) {
                     // TODO move the below code in a separate function
                     Some((x, y)) => {
                         let mut next_tile = space.get_mut(x).unwrap().get_mut(y).unwrap();
@@ -175,19 +157,97 @@ fn main() {
             }
         }
     }
+    // print final image
+    make_image(
+        &space,
+        &state.space_size,
+        &state.colors,
+        &state.output_filename,
+    );
 
     // also write this to a file
-    for line in &space {
-        for tile in line {
-            print!("{} ", tile.id);
+    // IMAGE_ONLY flag
+    if !state.image_only {
+        for line in &space {
+            for tile in line {
+                print!("{} ", tile.id);
+            }
+            println!();
         }
-        println!();
     }
+}
 
-    for color in &colors {
-        println!("{} {} {}", color[0], color[1], color[2]);
+fn main() {
+    let matches = App::new("Generating voronoi diagram")
+        .version("1.0")
+        .author("Heghedus Razvan <heghedus.razvan@gmail.com>")
+        .args(&[
+            Arg::with_name("INPUT")
+                .help("Input set file")
+                .long_help("Path to a valid input file as described in specification")
+                .required(true)
+                .index(1),
+            Arg::with_name("MULTITHREADING")
+                .short("m")
+                .help("Enable multithreading. By default multithreading is disabled."),
+            Arg::with_name("DEBUG_STEPS")
+                .short("d")
+                .help("Show debug images with intermediar steps"),
+            Arg::with_name("IMAGE_ONLY")
+                .short("i")
+                .help("Don't create additionl output file with pixel id instead of color"),
+        ])
+        .get_matches();
+    // get flags value
+    let debug_enabled: bool = matches.is_present("DEBUG_STEPS");
+    let multithreading_enable: bool = matches.is_present("MULTITHREADING");
+    let image_only: bool = matches.is_present("IMAGE_ONLY");
+
+    let filename = format!("data/{}", matches.value_of("INPUT").unwrap());
+    println!("Using data file: {}", filename);
+    // TODO more comments
+
+    let mut file = BufReader::new(File::open(filename).unwrap());
+
+    let mut line = String::new();
+    // read X, Y
+    file.read_line(&mut line).unwrap();
+    let space_size = Point::from_string(&line);
+
+    let mut seeds: Vec<Point> = Vec::new();
+
+    // read n
+    line.clear();
+    file.read_line(&mut line).unwrap();
+    let n: usize = line.trim().parse::<usize>().unwrap();
+
+    for (_, line) in file.lines().enumerate() {
+        let position = Point::from_string(&line.unwrap());
+        seeds.push(position);
     }
+    //generate n colors
+    let colors = generate_colors(n);
 
+    // directory
+    let output_debug_directory = format!("output/debug_{}", matches.value_of("INPUT").unwrap());
+    if debug_enabled {
+        let _ = fs::create_dir_all(&output_debug_directory);
+    }
     let output_filename = format!("output/{}.png", matches.value_of("INPUT").unwrap());
-    make_image(&space, &max_size, &colors, &output_filename);
+
+    let mut state: ApplicationState = ApplicationState {
+        seeds,
+        space_size,
+        debug_enabled,
+        output_debug_directory,
+        colors,
+        output_filename,
+        image_only,
+    };
+
+    if !multithreading_enable {
+        sequantial(&mut state);
+    } else {
+        multithreading(&mut state);
+    }
 }

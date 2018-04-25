@@ -1,18 +1,7 @@
-extern crate rand;
-
-use self::rand::Rng;
-
 #[derive(Clone, Copy)]
 pub struct Point {
     pub x: usize,
     pub y: usize,
-}
-
-#[derive(Clone, Copy)]
-pub struct Tile {
-    pub id: usize,
-    pub position: Point,
-    pub seed_position: Point,
 }
 
 impl Point {
@@ -37,6 +26,13 @@ impl Point {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct Tile {
+    pub id: usize,
+    pub position: Point,
+    pub seed_position: Point,
+}
+
 impl Tile {
     pub fn new(position: Point) -> Tile {
         Tile {
@@ -49,6 +45,16 @@ impl Tile {
     pub fn closer_seed(&self, _seed_position: &Point) -> bool {
         self.position.distance(&self.seed_position) <= self.position.distance(&_seed_position)
     }
+}
+
+pub struct ApplicationState {
+    pub seeds: Vec<Point>,
+    pub space_size: Point,
+    pub debug_enabled: bool,
+    pub output_debug_directory: String,
+    pub colors: Vec<[u8; 3]>,
+    pub output_filename: String,
+    pub image_only: bool,
 }
 
 pub fn point_bounderies(

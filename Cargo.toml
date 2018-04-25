@@ -1,5 +1,5 @@
 [package]
-name = "voronoi-sequential"
+name = "voronoi"
 version = "0.1.0"
 authors = ["Heghedus Razvan <heghedus.razvan@gmail.com>"]
 
