@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Point {
     pub x: usize,
     pub y: usize,
@@ -26,7 +26,7 @@ impl Point {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tile {
     pub id: usize,
     pub position: Point,
