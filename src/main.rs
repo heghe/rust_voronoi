@@ -8,16 +8,16 @@ extern crate rand;
 mod lib;
 
 use self::rand::Rng;
+use clap::{App, Arg};
+use futures::Future;
+use futures_cpupool::CpuPool;
+use hsl::HSL;
+use lib::{point_bounderies, ApplicationState, Point, Tile};
+use std::collections::VecDeque;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
-use clap::{App, Arg};
-use lib::{point_bounderies, ApplicationState, Point, Tile};
-use hsl::HSL;
-use futures::Future;
-use futures_cpupool::CpuPool;
 
 const SCALE_SIZE: u32 = 16;
 
@@ -150,7 +150,22 @@ fn multithreading(state: &mut ApplicationState) {
     let pool: CpuPool = CpuPool::new_num_cpus();
     let space = Arc::new(space);
 
+    let mut debug_step = 1;
+
     for step in steps {
+        // if debug enable write debug image
+        if state.debug_enabled {
+            let output_debug_filename =
+                format!("{}/{}.png", state.output_debug_directory, debug_step);
+            make_image_mt(
+                &space,
+                &state.space_size,
+                &state.colors,
+                &output_debug_filename,
+            );
+            debug_step += 1;
+        }
+        //
         // spawn threads
         let mut _futures = Vec::new();
 
@@ -216,8 +231,6 @@ fn multithreading(state: &mut ApplicationState) {
         for _future in _futures {
             queues.push(_future.wait().unwrap().clone());
         }
-        // TODO debug images
-        //for q in &queues {}
     }
     make_image_mt(
         &space,
@@ -384,6 +397,9 @@ fn main() {
     // directory
     let output_debug_directory = format!("output/debug_{}", matches.value_of("INPUT").unwrap());
     if debug_enabled {
+        // delete previous debug images folder for the current set
+        let _ = fs::remove_dir_all(&output_debug_directory);
+        // create the new debug images folder
         let _ = fs::create_dir_all(&output_debug_directory);
     }
     let output_filename = format!("output/{}.png", matches.value_of("INPUT").unwrap());
