@@ -1,3 +1,5 @@
+pub const SCALE_SIZE: u32 = 16;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Point {
     pub x: usize,
