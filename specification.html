@@ -1,0 +1,306 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   Made with Remarkable!
+  </title>
+  <link href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/styles/github.min.css" rel="stylesheet"/>
+  <style type="text/css">
+   ::selection,a::selection{background:rgba(255,255,0,.3)}a,a::selection{color:#0645ad}hr,img{border:0}a,ins{text-decoration:none}::selection,ins,mark{color:#000}dfn,mark{font-style:italic}hr,ol,p,ul{margin:1em 0}table tr td,table tr th{border:1px solid #ccc;text-align:left;padding:6px 13px;margin:0}hr,pre code,table,table tr{padding:0}pre,pre code{white-space:pre}html{font-size:100%;overflow-y:scroll;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}body{color:#444;font-family:Georgia,Palatino,"Palatino Linotype",Times,"Times New Roman",serif;font-size:12px;line-height:1.5em;padding:1em;margin:auto;max-width:42em;background:#fefefe}a:visited{color:#0b0080}a:hover{color:#06e}a:active{color:#faa700}a:focus{outline:dotted thin}a:active,a:hover{outline:0}::-moz-selection{background:rgba(255,255,0,.3);color:#000}a::-moz-selection{background:rgba(255,255,0,.3);color:#0645ad}img{max-width:100%;-ms-interpolation-mode:bicubic;vertical-align:middle}h1,h2,h3,h4,h5,h6{font-weight:400;color:#111;line-height:1em}b,h4,h5,h6,mark,strong,table tr th{font-weight:700}h1{font-size:2.5em}h2{font-size:2em}h3{font-size:1.5em}h4{font-size:1.2em}h5{font-size:1em}h6{font-size:.9em}blockquote{color:#666;margin:0;padding-left:3em;border-left:.5em #EEE solid}hr{display:block;height:2px;border-top:1px solid #aaa;border-bottom:1px solid #eee}code,kbd,pre,samp{color:#000;font-family:monospace,monospace;font-size:.98em}pre{white-space:pre-wrap;word-wrap:break-word}ins{background:#ff9}mark{background:#ff0}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sup{top:-.5em}sub{bottom:-.25em}ol,ul{padding:0 0 0 2em}li p:last-child{margin:0}dd{margin:0 0 0 2em}table{border-collapse:collapse;border-spacing:0}td{vertical-align:top}@media only screen and (min-width:480px){body{font-size:14px}}@media only screen and (min-width:768px){body{font-size:16px}}@media print{blockquote,img,pre,tr{page-break-inside:avoid}*{background:0 0!important;color:#000!important;filter:none!important;-ms-filter:none!important}body{font-size:12pt;max-width:100%}a,a:visited{text-decoration:underline}hr{height:1px;border:0;border-bottom:1px solid #000}a[href]:after{content:" (" attr(href) ")"}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}blockquote,pre{border:1px solid #999;padding-right:1em}img{max-width:100%!important}@page :left{margin:15mm 20mm 15mm 10mm}@page :right{margin:15mm 10mm 15mm 20mm}h2,h3,p{orphans:3;widows:3}h2,h3{page-break-after:avoid}}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0}table tr:nth-child(2n){background-color:#aaa}table tr td :first-child,table tr th :first-child{margin-top:0}table tr td:last-child,table tr th :last-child{margin-bottom:0}code,tt{margin:0 2px;padding:0 5px;white-space:nowrap;border:1px solid #eaeaea;background-color:#f8f8f8;border-radius:3px}pre code{margin:0;border:none;background:0 0}.highlight pre,pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}
+  </style>
+ </head>
+ <body>
+  <h1 id="generating-voronoi-diagram">
+   Generating Voronoi diagram
+  </h1>
+  <h3 id="introduction">
+   Introduction
+  </h3>
+  <p>
+   Voronoi diagram is a partition of a multi dimension space into regions based on distance to points in a specific subset of the space. The set of points (also called seeds, sites, or generators) is specified beforehand, and for each point there is a coresponding space region with the property that all the points in that region is closer to it’s seed than to any other. This regions are called Voronoi cells.
+  </p>
+  <p>
+   Most general space used for Voronoi diagrams it’s the 2D space, having multiple applications in various domains.
+  </p>
+  <h4 id="generating-voronoi-diagrams-in-2d-space-possible-also-3d-space">
+   Generating Voronoi diagrams in 2D space
+   <em>
+    (possible also 3D space)
+   </em>
+  </h4>
+  <h5 id="input-data-files">
+   Input data (
+   <em>
+    files
+   </em>
+   )
+  </h5>
+  <ul>
+   <li>
+    <strong>
+     X, Y
+    </strong>
+    : dimension of the 2D space (for simplicity
+    <strong>
+     X
+    </strong>
+    and
+    <strong>
+     Y
+    </strong>
+    will be equal)
+   </li>
+   <li>
+    <strong>
+     n
+    </strong>
+    : unsigned integer representing the number of seeds
+   </li>
+   <li>
+    on the following
+    <strong>
+     n
+    </strong>
+    lines there are pairs of
+    <strong>
+     x, y
+    </strong>
+    representing the position of the seeds in the
+    <em>
+     application space dimension
+    </em>
+   </li>
+  </ul>
+  <p>
+   The
+   <strong>
+    application space dimension
+   </strong>
+   it’s the space with the constrains that
+   <strong>
+    x
+   </strong>
+   is an integer in [0,
+   <strong>
+    X
+   </strong>
+   ] and
+   <strong>
+    y
+   </strong>
+   is an integer in [0,
+   <strong>
+    Y
+   </strong>
+   ]
+  </p>
+  <h5 id="output">
+   Output
+  </h5>
+  <p>
+   An image representing the Voronoi diagram, using as distancefunction the euclidian distance.
+   <br/>
+   *also for debug purpose(and maybe easy comparison of results between different implementations) there might be an aditional output file.
+  </p>
+  <h4 id="sequence-implementation-algorithm">
+   Sequence implementation algorithm
+  </h4>
+  <p>
+   For the sequence implementation I choose to use the classic flood fill algorithm. The ideea of this algorithm is we put the seeds in a queue, and while there are elements in the queue. we take the first element from the queue(will name it
+   <em>
+    current element
+   </em>
+   ), go to it’s neighbours (if the
+   <em>
+    current element
+   </em>
+   is at
+   <mathjax>
+    $&lt;x, y&gt;$
+   </mathjax>
+   position, we go to:
+   <mathjax>
+    $&lt;x+i, y+j&gt;$
+   </mathjax>
+   where
+   <mathjax>
+    $i, j \in \{-1, 0, 1\}$
+   </mathjax>
+   and name it
+   <em>
+    next element
+   </em>
+   ). If the
+   <em>
+    next element
+   </em>
+   doesn’t have a seed or if the distance between the
+   <em>
+    next element
+   </em>
+   and it’s associated seed is greater than the
+   <em>
+    next element
+   </em>
+   and the seed of the
+   <em>
+    current element
+   </em>
+   then the seed of the
+   <em>
+    next element
+   </em>
+   is change to the seed of the
+   <em>
+    current element
+   </em>
+   , and put the
+   <em>
+    next element
+   </em>
+   at the back of the queue.
+   <br/>
+   Example of the sequence implementaion:
+   <br/>
+   <img alt=" singlethread" src="./extra/steps/singlethread/single.png" title="Sequence example"/>
+  </p>
+  <h4 id="multithreading-implementation-algorithm">
+   Multithreading implementation algorithm
+  </h4>
+  <p>
+   For the multithreading implementation I choose to use a modified version of Jump Flooding Algorithm (aka JFA). This algorithm it’s somehow simmilar with the classical flood fill algorithm, but has much better performance, because was design to be used on GPUs and that’s why this implementation is a modified version of JFA. The ideea behind JFA is that instead of going to the neighbourn elements (the distance between
+   <em>
+    current element
+   </em>
+   and
+   <em>
+    next element
+   </em>
+   is 1), we choose the
+   <em>
+    next element
+   </em>
+   in the following way: for each
+   <em>
+    current element
+   </em>
+   at
+   <mathjax>
+    $&lt;x, y&gt;$
+   </mathjax>
+   the
+   <em>
+    next element
+   </em>
+   is positioned at
+   <mathjax>
+    $&lt;x+i, y+j&gt; where\ i, j \in \{-k, 0, k\}$
+   </mathjax>
+   and
+   <mathjax>
+    $k$
+   </mathjax>
+   takes values from
+   <mathjax>
+    $\frac{X}{2}, \frac{X}{4}, ..., 2, 1$
+   </mathjax>
+   (
+   <mathjax>
+    $X$
+   </mathjax>
+   is the space dimension of the 2D plan and it’s supposed to be equal with
+   <strong>
+    Y
+   </strong>
+   . In addition
+   <strong>
+    X
+   </strong>
+   is choose to be a power of 2). This little change grant’s us the posibility to fill more tiles with only
+   <mathjax>
+    $\log_2 X$
+   </mathjax>
+   steps instead of
+   <strong>
+    X
+   </strong>
+   .
+  </p>
+  <p>
+   To do this in a multithreading way, there will be
+   <strong>
+    n
+   </strong>
+   <em>
+    work jobs
+   </em>
+   , each
+   <em>
+    work job
+   </em>
+   having an associated seed. For every
+   <em>
+    work job
+   </em>
+   we apply the JFA algorithm explain above. These
+   <em>
+    work jobs
+   </em>
+   will run on a differents threads assigned from a thread pool wich will have a size equal with the number of logical proccesors. This means that the
+   <em>
+    work jobs
+   </em>
+   will run asynchronous. Because each time we do a flood we need to be sure that all the
+   <em>
+    work job
+   </em>
+   are at the same value of
+   <em>
+    k
+   </em>
+   we will have a barrier with will synchronize the
+   <em>
+    work jobs
+   </em>
+   . In addition of this we need to make sure that there will not be a race condition between threads when 2 or more threads want to modify the same element. To prevent this race condition, each element will be guarded by a mutex.
+  </p>
+  <h6 id="wt-description">
+   WT description
+  </h6>
+  <pre><code>Input: - Matrix s[0..X][0..X] shared memory(space matrix)
+       - Tile s(seed position)
+       - int k (step size)
+Output: updated matix space
+
+local queue q1,q2
+local bool done = false
+q1.push(s)
+
+while(!done):
+    while(!q1.empty()):
+        Tile c_t = q1.pop()
+        for Tile t in next_tiles(c_t):
+            if update(t, c_t):
+                q2.push(t)
+    q1 = q2
+    barrier() | &lt;-- wait for all threads here
+    done = next_step(k) | &lt;-- only one thread will update k
+</code></pre>
+  <p>
+   Example of the multithread implementaion:
+   <br/>
+   <img alt="multithread " src="./extra/steps/multithread/multi.png" title="Multithread example"/>
+  </p>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/highlight.min.js">
+  </script>
+  <script>
+   hljs.initHighlightingOnLoad();
+  </script>
+  <script type="text/javascript">
+   window.MathJax = {"showProcessingMessages" : false,"messageStyle" : "none", "tex2jax": {"inlineMath": [ ["$","$"] ]}};
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript">
+  </script>
+ </body>
+</html>

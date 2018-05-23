@@ -45,7 +45,11 @@ impl Tile {
     }
 
     pub fn closer_seed(&self, _seed_position: &Point) -> bool {
-        self.position.distance(&self.seed_position) <= self.position.distance(&_seed_position)
+        self.position.distance(&self.seed_position) < self.position.distance(&_seed_position)
+    }
+
+    pub fn same_distance_seed(&self, _seed_position: &Point) -> bool {
+        self.position.distance(&self.seed_position) == self.position.distance(&_seed_position)
     }
 }
 
@@ -56,7 +60,6 @@ pub struct ApplicationState {
     pub output_debug_directory: String,
     pub colors: Vec<[u8; 3]>,
     pub output_filename: String,
-    pub image_only: bool,
 }
 
 pub fn point_bounderies(

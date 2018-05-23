@@ -48,7 +48,6 @@ pub fn sequantial(state: &mut ApplicationState) {
     }
     let mut queue: VecDeque<Point> = VecDeque::new();
     // put the seeds in the space
-    // TODO make iterator for point struct to be able to use enumerate()
     let mut id = 1;
     for seed in &state.seeds {
         let mut tile = space.get_mut(seed.x).unwrap().get_mut(seed.y).unwrap();
@@ -95,18 +94,30 @@ pub fn sequantial(state: &mut ApplicationState) {
         for i in &directions {
             for j in &directions {
                 match point_bounderies(&position, *i, *j, &state.space_size) {
-                    // TODO move the below code in a separate function
                     Some((x, y)) => {
                         let mut next_tile = space.get_mut(x).unwrap().get_mut(y).unwrap();
                         if current_tile.id != next_tile.id {
+                            // first time when visiting this tile
                             if next_tile.id == 0 {
                                 next_tile.id = current_tile.id;
                                 next_tile.seed_position = current_tile.seed_position;
                                 queue.push_back(next_tile.position);
-                            }
-                            //else if next_tile.id > current_tile.id {
-                            else {
+                            } else {
+                                // if the distance from next tile to current tile seed is
+                                // less than the edistance between next tile and it's seed
+                                // update the seed of the next tile with the seed of the
+                                // current tile
                                 if !next_tile.closer_seed(&current_tile.seed_position) {
+                                    next_tile.id = current_tile.id;
+                                    next_tile.seed_position = current_tile.seed_position;
+                                    queue.push_back(next_tile.position);
+                                }
+                                // if the distance from next tile to next tile seed is the same
+                                // as the distance from next tile to the current tile seed
+                                // choose the seed with the lower id
+                                else if next_tile.same_distance_seed(&current_tile.seed_position)
+                                    && next_tile.id > current_tile.id
+                                {
                                     next_tile.id = current_tile.id;
                                     next_tile.seed_position = current_tile.seed_position;
                                     queue.push_back(next_tile.position);
@@ -126,15 +137,4 @@ pub fn sequantial(state: &mut ApplicationState) {
         &state.colors,
         &state.output_filename,
     );
-
-    // also write this to a file
-    // IMAGE_ONLY flag
-    if !state.image_only {
-        for line in &space {
-            for tile in line {
-                print!("{} ", tile.id);
-            }
-            println!();
-        }
-    }
 }

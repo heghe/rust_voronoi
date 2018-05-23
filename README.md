@@ -1,10 +1,13 @@
 ## Generating Voronoi diagrams in rust
 
-2 parts:
- - [x] sequential implementation(using clasic algorithm)
- - [ ] paralel implementation(using jump flood algorithm)
+# Steps
+`cargo build`  
+To print help:  
+`cargo run -- --help`  
+To run single thread data set 1:  
+`cargo run -- set1`  
+To run multhithread data set 1:  
+`cargo run -- set1 -m`  
 
-Todos:
- - [ ] command line argument for using one implementation or the other
- - [ ] move specification document here
- - [ ] improve poont_in_space_dimension
+
+For some reason writing the image on disk takes a lot of time

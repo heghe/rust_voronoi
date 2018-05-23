@@ -17,6 +17,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+/// Generate n different colors
 pub fn generate_colors(n: usize) -> Vec<[u8; 3]> {
     let mut colors: Vec<[u8; 3]> = Vec::new();
     let mut rng = rand::thread_rng();
@@ -43,7 +44,7 @@ fn main() {
         .args(&[
             Arg::with_name("INPUT")
                 .help("Input set file")
-                .long_help("Path to a valid input file as described in specification")
+                .long_help("Input file from data folder, formatted as described in specification")
                 .required(true)
                 .index(1),
             Arg::with_name("MULTITHREADING")
@@ -52,19 +53,14 @@ fn main() {
             Arg::with_name("DEBUG_STEPS")
                 .short("d")
                 .help("Show debug images with intermediar steps"),
-            Arg::with_name("IMAGE_ONLY")
-                .short("i")
-                .help("Don't create additionl output file with pixel id instead of color"),
         ])
         .get_matches();
     // get flags value
     let debug_enabled: bool = matches.is_present("DEBUG_STEPS");
     let multithreading_enable: bool = matches.is_present("MULTITHREADING");
-    let image_only: bool = matches.is_present("IMAGE_ONLY");
 
     let filename = format!("data/{}", matches.value_of("INPUT").unwrap());
     println!("Using data file: {}", filename);
-    // TODO more comments
 
     let mut file = BufReader::new(File::open(filename).unwrap());
 
@@ -90,6 +86,10 @@ fn main() {
     // directory
     let output_debug_directory = format!("output/debug_{}", matches.value_of("INPUT").unwrap());
     if debug_enabled {
+        println!(
+            "Debug images enable. Will be put in {}",
+            output_debug_directory
+        );
         // delete previous debug images folder for the current set
         let _ = fs::remove_dir_all(&output_debug_directory);
         // create the new debug images folder
@@ -104,12 +104,13 @@ fn main() {
         output_debug_directory,
         colors,
         output_filename,
-        image_only,
     };
 
     if !multithreading_enable {
+        println!("Single thread run");
         sequantial(&mut state);
     } else {
+        println!("Multithread run");
         multithreading(&mut state);
     }
 }

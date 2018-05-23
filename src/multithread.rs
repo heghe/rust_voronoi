@@ -102,7 +102,6 @@ pub fn multithreading(state: &mut ApplicationState) {
             );
             debug_step += 1;
         }
-        //
         // spawn threads
         let mut _futures = Vec::new();
 
@@ -140,12 +139,29 @@ pub fn multithreading(state: &mut ApplicationState) {
                                         _,
                                     > = _space.get(x).unwrap().get(y).unwrap().lock().unwrap();
                                     if current_tile.id != next_tile.id {
+                                        // first time when visiting this tile
                                         if next_tile.id == 0 {
                                             (*next_tile).id = current_tile.id;
                                             (*next_tile).seed_position = current_tile.seed_position;
                                             next_queue.push_back(next_tile.position);
                                         } else {
+                                            // if the distance from next tile to current tile seed is
+                                            // less than the edistance between next tile and it's seed
+                                            // update the seed of the next tile with the seed of the
+                                            // current tile
                                             if !next_tile.closer_seed(&current_tile.seed_position) {
+                                                (*next_tile).id = current_tile.id;
+                                                (*next_tile).seed_position =
+                                                    current_tile.seed_position;
+                                                next_queue.push_back(next_tile.position);
+                                            }
+                                            // if the distance from next tile to next tile seed is the same
+                                            // as the distance from next tile to the current tile seed
+                                            // choose the seed with the lower id
+                                            else if next_tile
+                                                .same_distance_seed(&current_tile.seed_position)
+                                                && (*next_tile).id > current_tile.id
+                                            {
                                                 (*next_tile).id = current_tile.id;
                                                 (*next_tile).seed_position =
                                                     current_tile.seed_position;
@@ -169,6 +185,7 @@ pub fn multithreading(state: &mut ApplicationState) {
             queues.push(_future.wait().unwrap().clone());
         }
     }
+    // print final image
     make_image_mt(
         &space,
         &state.space_size,
