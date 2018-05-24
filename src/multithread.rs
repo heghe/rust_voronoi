@@ -57,7 +57,7 @@ pub fn multithreading(state: &mut ApplicationState) {
     }
 
     // vector of queues for each seed
-    let mut queues: Vec<VecDeque<Point>> = Vec::with_capacity(state.seeds.len());
+    let mut queues: VecDeque<VecDeque<Point>> = VecDeque::with_capacity(state.seeds.len());
 
     let mut id = 1;
     for seed in &state.seeds {
@@ -73,7 +73,7 @@ pub fn multithreading(state: &mut ApplicationState) {
         (*tile).seed_position = *seed;
         id += 1;
         seed_queue.push_back(*seed);
-        queues.push(seed_queue);
+        queues.push_back(seed_queue);
     }
 
     let mut steps: Vec<isize> = Vec::new();
@@ -83,6 +83,7 @@ pub fn multithreading(state: &mut ApplicationState) {
         steps.push(i);
         i /= 2;
     }
+    steps.push(1);
 
     let pool: CpuPool = CpuPool::new_num_cpus();
     let space = Arc::new(space);
@@ -105,8 +106,8 @@ pub fn multithreading(state: &mut ApplicationState) {
         // spawn threads
         let mut _futures = Vec::new();
 
-        for queue in &queues {
-            let mut _queue = queue.clone();
+        while !queues.is_empty() {
+            let mut _queue = queues.pop_front().unwrap();
             let _space = space.clone();
             let _step = step;
             let directions: Vec<isize> = vec![-1, 0, 1];
@@ -124,7 +125,7 @@ pub fn multithreading(state: &mut ApplicationState) {
                         .unwrap();
                     let current_tile: Tile = (*current_tile_mutex).clone();
                     drop(current_tile_mutex);
-                    next_queue.push_back(current_tile.position);
+                    //next_queue.push_back(current_tile.position);
 
                     for i in &directions {
                         for j in &directions {
@@ -144,6 +145,7 @@ pub fn multithreading(state: &mut ApplicationState) {
                                             (*next_tile).id = current_tile.id;
                                             (*next_tile).seed_position = current_tile.seed_position;
                                             next_queue.push_back(next_tile.position);
+                                            next_queue.push_back(current_tile.position);
                                         } else {
                                             // if the distance from next tile to current tile seed is
                                             // less than the edistance between next tile and it's seed
@@ -154,6 +156,7 @@ pub fn multithreading(state: &mut ApplicationState) {
                                                 (*next_tile).seed_position =
                                                     current_tile.seed_position;
                                                 next_queue.push_back(next_tile.position);
+                                                next_queue.push_back(current_tile.position);
                                             }
                                             // if the distance from next tile to next tile seed is the same
                                             // as the distance from next tile to the current tile seed
@@ -166,6 +169,7 @@ pub fn multithreading(state: &mut ApplicationState) {
                                                 (*next_tile).seed_position =
                                                     current_tile.seed_position;
                                                 next_queue.push_back(next_tile.position);
+                                                next_queue.push_back(current_tile.position);
                                             }
                                         }
                                     }
@@ -182,7 +186,7 @@ pub fn multithreading(state: &mut ApplicationState) {
         queues.clear();
         // wait for threads and update queues
         for _future in _futures {
-            queues.push(_future.wait().unwrap().clone());
+            queues.push_back(_future.wait().unwrap());
         }
     }
     // print final image
